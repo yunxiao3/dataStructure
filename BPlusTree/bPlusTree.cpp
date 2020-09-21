@@ -172,6 +172,7 @@ bool BPlusTree<Key,Value,MinChild>::find(Key const& key, Value &value){
 		return false;
 	}else{
 		auto treeNode = dynamic_pointer_cast<TreeNode>(root); 
+		/*
 		int index = treeNode->keyNum - 1; 
 		while(index >= 0 && treeNode->key[index] > key){
 			index--;
@@ -182,6 +183,15 @@ bool BPlusTree<Key,Value,MinChild>::find(Key const& key, Value &value){
 			index++;	
 			return find(treeNode->child[index],key,value);
 		}
+		*/
+		int index = 0;
+		while(index < treeNode->keyNum  && treeNode->key[index] < key){
+			index++;
+		}
+		return find(treeNode->child[index],key,value);
+
+
+	
 		//index++;
 		
 	}
@@ -194,12 +204,15 @@ bool BPlusTree<Key,Value,MinChild>::find(shared_ptr<Node> node,Key const& key, V
 		for (int i = 0; i < treeLeaf->keyNum; ++i){
 			if (treeLeaf->bucket[i].first == key){
 				value = treeLeaf->bucket[i].second;
+				cout<< key << " find value : " << value;
 				return true;
 			}
 		}
 		return false;
 	}else{
 		auto treeNode = dynamic_pointer_cast<TreeNode>(node); 
+		/*
+		// In this way, when key is little enough, index can be -1 which may cause segmentation fault
 		int index = treeNode->keyNum - 1; 
 		while(index >= 0 && treeNode->key[index] > key){
 			index--;
@@ -210,8 +223,12 @@ bool BPlusTree<Key,Value,MinChild>::find(shared_ptr<Node> node,Key const& key, V
 			index++;	
 			return find(treeNode->child[index],key,value);
 		}
-		/*cout<< "find in child index: " << index << endl ;
-		return find(treeNode->child[index],key,value);*/
+		*/
+		int index = 0;
+		while(index < treeNode->keyNum  && treeNode->key[index] < key){
+			index++;
+		}
+		return find(treeNode->child[index],key,value);
 	}
 }
 
@@ -277,22 +294,26 @@ int main(int argc, char const *argv[]){
 	
 	BPlusTree<int,int,3> tree ;
 
-	for (int i = 0; i < 1088; ++i){
+	for (int i = 0; i < 1800; ++i){
 		tree.insert(i,i*10);
 	}
-	for (int i = 0; i < 1088; ++i){
+	cout<<"insert success!";
+	for (int i = 0; i < 1800; ++i){
 		int value = 0;
 		int key = 0;
-		bool ok = tree.find(key,value);
-		if (!ok){
-			cout << "ERROR!" << endl;
-			return -1;
+		bool ok = tree.find(i,value);
+	/*	if (ok == true){
+			cout << value <<" ";
 		}
-		key++;
+*/
+		if (ok == false){
+			cout<< "#########find##### " << i+1 <<" ERROR!" << endl;
+			//return -1;
+		}
 	}
 	tree.printTree();
 	while(true){
-		int value=0;
+		int value = 0;
 		int key = 0;
 		cin >> key;
 		bool ok = tree.find(key,value);
