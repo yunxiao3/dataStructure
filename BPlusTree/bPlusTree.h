@@ -12,11 +12,6 @@
 
 using namespace std;
 
-
-
-
-
-
 template <class Key, class Value, int MinChild> 
 class BPlusTree{
 
@@ -61,8 +56,22 @@ class BPlusTree{
 	void printTree();
 	bool find(shared_ptr<Node> node,Key const& key, Value &value);
 	bool find(Key const& key, Value &value);
-	//bool find(shared_ptr<TreeNode> node , T const& key);
-	//bool find(T const& key);
+	bool remove(Key const key);
+	bool remove(shared_ptr<Node> node, Key const key);
+	bool mergeChild(shared_ptr<Node>  father, int position,
+		shared_ptr<Node> leftChild, shared_ptr<Node> rightChild);
+	Key precursor(shared_ptr<Node> node);
+	
+	Key successor(shared_ptr<Node> node);
+	bool borrowFromRight(shared_ptr<Node>  father, int position,
+		shared_ptr<Node> node, shared_ptr<Node> rightChild);
+	bool borrowFromLeft(shared_ptr<Node>  father, int position,
+		shared_ptr<Node> node, shared_ptr<Node> leftChild);
+	bool borrowOrMerge(shared_ptr<Node> node,  int index);
+	bool removeAtNode(shared_ptr<Node> node, int index);
+	bool removeAtLeaf(shared_ptr<Node> node, Key const key);
+
+
 /*
 	bool del(T const& value);
 	bool remove(T const& value);

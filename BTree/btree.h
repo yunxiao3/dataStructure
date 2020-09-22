@@ -42,6 +42,8 @@ class Btree{
 
 	bool del(T const& value);
 	bool remove(T const& value);
+	bool removeAtNode(shared_ptr<TreeNode> node, int position); 
+	bool removeMergeOrBorrow(shared_ptr<TreeNode> node, int position,int value); 
 	//bool remove(shared_ptr<TreeNode> node, T const& value);
 	bool remove(shared_ptr<TreeNode> node, T const& value);
 	bool mergeChild(shared_ptr<TreeNode>  father, int position,

@@ -188,12 +188,7 @@ bool BPlusTree<Key,Value,MinChild>::find(Key const& key, Value &value){
 		while(index < treeNode->keyNum  && treeNode->key[index] < key){
 			index++;
 		}
-		return find(treeNode->child[index],key,value);
-
-
-	
-		//index++;
-		
+		return find(treeNode->child[index],key,value);		
 	}
 }
 
@@ -233,6 +228,164 @@ bool BPlusTree<Key,Value,MinChild>::find(shared_ptr<Node> node,Key const& key, V
 }
 
 
+/*############### Remove Value in B tree ##############*/
+	
+template <class Key, class Value, int MinChild> 
+bool BPlusTree<Key,Value,MinChild>::remove(Key const key){
+
+
+
+}
+
+
+template <class Key, class Value, int MinChild> 
+bool BPlusTree<Key,Value,MinChild>::removeAtLeaf(shared_ptr<Node> node, Key const key){
+	auto treeLeaf = dynamic_pointer_cast<TreeLeaf>(node); 
+	int index = 0;
+	for (; index < treeLeaf->keyNum; ++index){
+		if (treeLeaf->bucket[index].first == key){
+			break;
+		}
+	}
+	if (index == treeLeaf->keyNum){
+		cout << "can't find and remove " << key <<endl;
+		return false;
+	}
+	for (int i = index; i < treeLeaf->keyNum-1; ++i){
+		treeLeaf->bucket[index] = treeLeaf->bucket[index+1];
+	}
+	treeLeaf->keyNum--;
+	return true;
+}
+
+
+template <class Key, class Value, int MinChild> 
+bool BPlusTree<Key,Value,MinChild>::removeAtNode(shared_ptr<Node> node, int index){
+	auto treeNode = dynamic_pointer_cast<TreeNode>(node); 
+	/*
+	DEBUG:	Maybe exist bug when reomve key 
+	*/
+	// 如果删除节点的左子树的keyNum > MinChild -1则可以向右边找一个后继替代待删除的key
+	if (treeNode->child[index]->keyNum > MinChild -1){
+		Key newKey = precursor(treeNode->child[index]);
+		Key key = treeNode->key[index];
+		treeNode->key[index] = newKey;
+		//并且继续递归删除后继newKey
+		return remove(treeNode->child[index],key);
+	}
+	// 如果删除节点的右子树的keyNum > MinChild -1则可以向右边找一个后继替代待删除的key
+	else if (treeNode->child[index+1]->keyNum > MinChild -1){
+		Key newKey = successor(treeNode->child[index+1]);
+		Key key = treeNode->key[index];
+		treeNode->key[index] = newKey;
+		//并且继续递归删除后继newKey
+		return remove(treeNode->child[index+1],key);
+	}else{
+		//合并左右子树将key移到子树上面继续删除
+		mergeChild(treeNode,index,treeNode->child[index],treeNode->child[index+1]);
+		return remove(treeNode->child[index],treeNode->key[index]);
+	}
+}
+
+template <class Key, class Value, int MinChild> 
+bool BPlusTree<Key,Value,MinChild>::borrowOrMerge(shared_ptr<Node> node,  int index){
+
+}
+
+
+template <class Key, class Value, int MinChild> 
+bool BPlusTree<Key,Value,MinChild>::remove(shared_ptr<Node> node, Key const key){
+
+	if (node->isLeaf){
+		return removeLeaf(node,key);
+	}else{
+		auto treeNode = dynamic_pointer_cast<TreeNode>(node); 
+		int index = 0;
+		while(index < treeNode->keyNum  && treeNode->key[index] < key){
+			index++;
+		}
+		//如果key在TreeNode节点上调用removeAtNode
+		if(treeNode->key[index] == key){
+			return removeAtNode(node,index);
+		//如过不在则继续递归删除，此时应该判断nextNode的keyNum值是否大于MinChild - 1
+		}else{
+			//如果nextNode的keynum大于MinChild - 1，直接继续删除
+			if (treeNode->child[index]->keyNum > MinChild - 1){
+				return remove(treeNode->child[index], key);
+			// 否则需要向左右子树借一个节点，或者合并两个子节点来保证nextNode的keyNum > MinChild-1
+			}else{
+				if ( borrowOrMerge(node,index) ){
+					return remove(treeNode->child[index], key);
+				}else{
+					cout<< "borrowOrMerge ERROR" << endl;
+					return false;
+				}
+			}
+		}
+	}
+}
+
+
+
+
+
+template <class Key, class Value, int MinChild> 
+bool BPlusTree<Key,Value,MinChild>::mergeChild(shared_ptr<Node>  father, int position,
+	shared_ptr<Node> leftChild, shared_ptr<Node> rightChild){
+	/*
+		ToDo
+	*/
+}
+
+template <class Key, class Value, int MinChild> 
+Key BPlusTree<Key,Value,MinChild>::precursor(shared_ptr<Node> node){
+	if (node->isLeaf){
+		auto treeLeaf = dynamic_pointer_cast<TreeLeaf>(node); 
+		return treeLeaf->bucket[treeLeaf->keyNum - 1].first;
+	}
+	else{
+		auto treeNode = dynamic_pointer_cast<treeNode>(node); 
+		return precursor(node->child[node->keyNum]);
+	}
+}
+
+template <class Key, class Value, int MinChild> 
+Key BPlusTree<Key,Value,MinChild>::successor(shared_ptr<Node> node){
+	if (node->isLeaf){
+		auto treeLeaf = dynamic_pointer_cast<TreeLeaf>(node); 
+		return treeLeaf->bucket[0].first;
+	}
+	else{
+		auto treeNode = dynamic_pointer_cast<treeNode>(node); 
+		return precursor(node->child[0]);
+	}
+}
+template <class Key, class Value, int MinChild> 
+bool borrowFromRight(shared_ptr<Node>  father, int position,shared_ptr<Node> node, shared_ptr<Node> rightChild){
+	/*
+		ToDo
+	*/
+	return false;
+
+}
+template <class Key, class Value, int MinChild> 
+bool borrowFromLeft(shared_ptr<Node>  father, int position,
+	shared_ptr<Node> node, shared_ptr<Node> leftChild){
+	/*
+		ToDo
+	*/
+	return false;
+}
+
+
+
+
+
+
+
+
+
+/*################# Test Function　 ################*/
 
 template <class Key, class Value, int MinChild> 
 void BPlusTree<Key,Value,MinChild>::printLeaf(){
