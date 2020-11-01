@@ -102,17 +102,6 @@ bool BPlusTree<Key,Value,MinChild>::insertNotFull(shared_ptr<Node> node, Key con
 	if(node->isLeaf){
 		auto leafNode = std::dynamic_pointer_cast<TreeLeaf>(node);
 		int index = leafNode->keyNum - 1; 
-		
-		/*
-		#### Wrong Implement ####
-		while(index >= 0){
-			if (leafNode->bucket[index].first > key){
-				break;
-			}
-			index--;
-		}
-		if (index < 0) {index = 0;}
-		*/
 
 		while(index >= 0 && leafNode->bucket[index].first > key){
 			index--;
@@ -124,21 +113,10 @@ bool BPlusTree<Key,Value,MinChild>::insertNotFull(shared_ptr<Node> node, Key con
 		}
 		leafNode->bucket[index] = make_pair(key,value);
 		node->keyNum++;
-		cout<< key << value << "insert Success !\n";
+		//cout<< key << value << "insert Success !\n";
 	}else{
 		auto treeNode = std::dynamic_pointer_cast<TreeNode>(node);
 		int index = treeNode->keyNum - 1; 
-		/*
-		Wrong implement 
-		while(index >= 0){
-			if (treeNode->key[index] < key){
-				break;
-			}
-			index--;
-		}
-		if (index < 0) {index = 0;}
-		*/
-		
 
 		while(index >= 0 && treeNode->key[index] > key){
 			index--;
@@ -172,18 +150,6 @@ bool BPlusTree<Key,Value,MinChild>::find(Key const& key, Value &value){
 		return false;
 	}else{
 		auto treeNode = dynamic_pointer_cast<TreeNode>(root); 
-		/*
-		int index = treeNode->keyNum - 1; 
-		while(index >= 0 && treeNode->key[index] > key){
-			index--;
-		}
-		if ( treeNode->key[index] == key){
-			return find(treeNode->child[index],key,value);
-		}else{
-			index++;	
-			return find(treeNode->child[index],key,value);
-		}
-		*/
 		int index = 0;
 		while(index < treeNode->keyNum  && treeNode->key[index] < key){
 			index++;
@@ -199,26 +165,13 @@ bool BPlusTree<Key,Value,MinChild>::find(shared_ptr<Node> node,Key const& key, V
 		for (int i = 0; i < treeLeaf->keyNum; ++i){
 			if (treeLeaf->bucket[i].first == key){
 				value = treeLeaf->bucket[i].second;
-				cout<< key << " find value : " << value;
+			//	cout<< key << " find value : " << value;
 				return true;
 			}
 		}
 		return false;
 	}else{
 		auto treeNode = dynamic_pointer_cast<TreeNode>(node); 
-		/*
-		// In this way, when key is little enough, index can be -1 which may cause segmentation fault
-		int index = treeNode->keyNum - 1; 
-		while(index >= 0 && treeNode->key[index] > key){
-			index--;
-		}
-		if ( treeNode->key[index] == key){
-			return find(treeNode->child[index],key,value);
-		}else{
-			index++;	
-			return find(treeNode->child[index],key,value);
-		}
-		*/
 		int index = 0;
 		while(index < treeNode->keyNum  && treeNode->key[index] < key){
 			index++;
@@ -238,64 +191,11 @@ bool BPlusTree<Key,Value,MinChild>::remove(Key const key){
 }
 
 
-template <class Key, class Value, int MinChild> 
-bool BPlusTree<Key,Value,MinChild>::removeAtLeaf(shared_ptr<Node> node, Key const key){
-	auto treeLeaf = dynamic_pointer_cast<TreeLeaf>(node); 
-	int index = 0;
-	for (; index < treeLeaf->keyNum; ++index){
-		if (treeLeaf->bucket[index].first == key){
-			break;
-		}
-	}
-	if (index == treeLeaf->keyNum){
-		cout << "can't find and remove " << key <<endl;
-		return false;
-	}
-	for (int i = index; i < treeLeaf->keyNum-1; ++i){
-		treeLeaf->bucket[index] = treeLeaf->bucket[index+1];
-	}
-	treeLeaf->keyNum--;
-	return true;
-}
-
-
-template <class Key, class Value, int MinChild> 
-bool BPlusTree<Key,Value,MinChild>::removeAtNode(shared_ptr<Node> node, int index){
-	auto treeNode = dynamic_pointer_cast<TreeNode>(node); 
-	/*
-	DEBUG:	Maybe exist bug when reomve key 
-	*/
-	// 如果删除节点的左子树的keyNum > MinChild -1则可以向右边找一个后继替代待删除的key
-	if (treeNode->child[index]->keyNum > MinChild -1){
-		Key newKey = precursor(treeNode->child[index]);
-		Key key = treeNode->key[index];
-		treeNode->key[index] = newKey;
-		//并且继续递归删除后继newKey
-		return remove(treeNode->child[index],key);
-	}
-	// 如果删除节点的右子树的keyNum > MinChild -1则可以向右边找一个后继替代待删除的key
-	else if (treeNode->child[index+1]->keyNum > MinChild -1){
-		Key newKey = successor(treeNode->child[index+1]);
-		Key key = treeNode->key[index];
-		treeNode->key[index] = newKey;
-		//并且继续递归删除后继newKey
-		return remove(treeNode->child[index+1],key);
-	}else{
-		//合并左右子树将key移到子树上面继续删除
-		mergeChild(treeNode,index,treeNode->child[index],treeNode->child[index+1]);
-		return remove(treeNode->child[index],treeNode->key[index]);
-	}
-}
-
-template <class Key, class Value, int MinChild> 
-bool BPlusTree<Key,Value,MinChild>::borrowOrMerge(shared_ptr<Node> node,  int index){
-
-}
 
 
 template <class Key, class Value, int MinChild> 
 bool BPlusTree<Key,Value,MinChild>::remove(shared_ptr<Node> node, Key const key){
-
+	// 如果node是leader调用removeLeaf
 	if (node->isLeaf){
 		return removeLeaf(node,key);
 	}else{
@@ -327,6 +227,59 @@ bool BPlusTree<Key,Value,MinChild>::remove(shared_ptr<Node> node, Key const key)
 
 
 
+template <class Key, class Value, int MinChild> 
+bool BPlusTree<Key,Value,MinChild>::removeAtLeaf(shared_ptr<Node> node, Key const key){
+	auto treeLeaf = dynamic_pointer_cast<TreeLeaf>(node); 
+	int index = 0;
+	for (; index < treeLeaf->keyNum; ++index){
+		if (treeLeaf->bucket[index].first == key){
+			break;
+		}
+	}
+	if (index == treeLeaf->keyNum){
+		cout << "can't find and remove " << key <<endl;
+		return false;
+	}
+	for (int i = index; i < treeLeaf->keyNum-1; ++i){
+		treeLeaf->bucket[index] = treeLeaf->bucket[index+1];
+	}
+	treeLeaf->keyNum--;
+	return true;
+}
+
+
+template <class Key, class Value, int MinChild> 
+bool BPlusTree<Key,Value,MinChild>::removeAtNode(shared_ptr<Node> node, int index){
+	auto treeNode = dynamic_pointer_cast<TreeNode>(node); 
+	/*
+		DEBUG:	Maybe exist bug when reomve key 
+	*/
+	Key key = treeNode->key[index];
+	// 如果删除节点的左子树的keyNum > MinChild -1则可以向右边找一个后继替代待删除的key
+	if (treeNode->child[index]->keyNum > MinChild -1){
+		Key newKey = precursor(treeNode->child[index], key);
+		treeNode->key[index] = newKey;
+		//并且继续递归删除后继newKey
+		return remove(treeNode->child[index],key);
+	}
+	// 如果删除节点的右子树的keyNum > MinChild -1则可以向右边找一个后继替代待删除的key
+	else if (treeNode->child[index+1]->keyNum > MinChild -1){
+		Key newKey = successor(treeNode->child[index+1],key);
+		treeNode->key[index] = newKey;
+		//并且继续递归删除后继newKey
+		return remove(treeNode->child[index+1],key);
+	}else{
+		//合并左右子树将key移到子树上面继续删除
+		mergeChild(treeNode,index,treeNode->child[index],treeNode->child[index+1]);
+		return remove(treeNode->child[index],key);
+	}
+}
+
+template <class Key, class Value, int MinChild> 
+bool BPlusTree<Key,Value,MinChild>::borrowOrMerge(shared_ptr<Node> node,  int index){
+
+}
+
 
 
 template <class Key, class Value, int MinChild> 
@@ -338,30 +291,38 @@ bool BPlusTree<Key,Value,MinChild>::mergeChild(shared_ptr<Node>  father, int pos
 }
 
 template <class Key, class Value, int MinChild> 
-Key BPlusTree<Key,Value,MinChild>::precursor(shared_ptr<Node> node){
+Key BPlusTree<Key,Value,MinChild>::precursor(shared_ptr<Node> node, Key key){
 	if (node->isLeaf){
 		auto treeLeaf = dynamic_pointer_cast<TreeLeaf>(node); 
-		return treeLeaf->bucket[treeLeaf->keyNum - 1].first;
+		if (treeLeaf->bucket[treeLeaf->keyNum - 1].first != key){
+			return treeLeaf->bucket[treeLeaf->keyNum - 1].first;
+		}else{
+			return treeLeaf->bucket[treeLeaf->keyNum - 2].first;
+		}
 	}
 	else{
-		auto treeNode = dynamic_pointer_cast<treeNode>(node); 
+		auto treeNode = dynamic_pointer_cast<TreeNode>(node); 
 		return precursor(node->child[node->keyNum]);
 	}
 }
 
 template <class Key, class Value, int MinChild> 
-Key BPlusTree<Key,Value,MinChild>::successor(shared_ptr<Node> node){
+Key BPlusTree<Key,Value,MinChild>::successor(shared_ptr<Node> node, Key key){
 	if (node->isLeaf){
 		auto treeLeaf = dynamic_pointer_cast<TreeLeaf>(node); 
-		return treeLeaf->bucket[0].first;
+		if (treeLeaf->bucket[0].first != key){
+			return treeLeaf->bucket[0].first;
+		}else{
+			return treeLeaf->bucket[1].first;
+		}
 	}
 	else{
-		auto treeNode = dynamic_pointer_cast<treeNode>(node); 
+		auto treeNode = dynamic_pointer_cast<TreeNode>(node); 
 		return precursor(node->child[0]);
 	}
 }
 template <class Key, class Value, int MinChild> 
-bool borrowFromRight(shared_ptr<Node>  father, int position,shared_ptr<Node> node, shared_ptr<Node> rightChild){
+bool BPlusTree<Key,Value,MinChild>::borrowFromRight(shared_ptr<Node> father, int position,shared_ptr<Node> node, shared_ptr<Node> rightChild){
 	/*
 		ToDo
 	*/
@@ -369,11 +330,47 @@ bool borrowFromRight(shared_ptr<Node>  father, int position,shared_ptr<Node> nod
 
 }
 template <class Key, class Value, int MinChild> 
-bool borrowFromLeft(shared_ptr<Node>  father, int position,
-	shared_ptr<Node> node, shared_ptr<Node> leftChild){
+bool BPlusTree<Key,Value,MinChild>::borrowFromLeft(shared_ptr<Node>  father1, int position,	shared_ptr<Node> node1, shared_ptr<Node> leftChild1){
 	/*
 		ToDo
 	*/
+	if (node1->isLeaf){
+
+		/*auto node = dynamic_pointer_cast<TreeLeaf>(node1); 
+		auto father = dynamic_pointer_cast<TreeLeaf>(father1); 
+		auto leftChild = dynamic_pointer_cast<TreeLeaf>(leftChild1); 
+
+		node->child[node->keyNum + 1] =  node->child[node->keyNum]; 
+		for (int i = node->keyNum; i > 0; --i){
+			node->key[i] = node->key[i-1];
+			node->child[i] = node->child[i-1];
+		}
+		node->key[0] = father->key[position];
+		node->child[0] = leftChild->child[leftChild->keyNum];
+		node->keyNum++;
+		father->key[position] = leftChild->key[leftChild->keyNum-1];
+		leftChild->child[leftChild->keyNum] = nullptr;
+		leftChild->keyNum--;*/
+
+
+	}else{
+		auto node = dynamic_pointer_cast<TreeNode>(node1); 
+		auto father = dynamic_pointer_cast<TreeNode>(father1); 
+		auto leftChild = dynamic_pointer_cast<TreeNode>(leftChild1); 
+
+		node->child[node->keyNum + 1] =  node->child[node->keyNum]; 
+		for (int i = node->keyNum; i > 0; --i){
+			node->key[i] = node->key[i-1];
+			node->child[i] = node->child[i-1];
+		}
+		node->key[0] = father->key[position];
+		node->child[0] = leftChild->child[leftChild->keyNum];
+		node->keyNum++;
+		father->key[position] = leftChild->key[leftChild->keyNum-1];
+		leftChild->child[leftChild->keyNum] = nullptr;
+		leftChild->keyNum--;
+	}
+	
 	return false;
 }
 
@@ -436,45 +433,52 @@ void BPlusTree<Key,Value,MinChild>::printTree(){
 				if (treeNode->child[i] == nullptr){
 					break;
 				}
-			q.push(make_pair(treeNode->child[i],depth+1));
+					q.push(make_pair(treeNode->child[i],depth+1));
 				}	
 		}
 	}
 }
 
 
-int main(int argc, char const *argv[]){
-	
-	BPlusTree<int,int,3> tree ;
 
-	for (int i = 0; i < 1800; ++i){
-		tree.insert(i,i*10);
-	}
-	cout<<"insert success!";
-	for (int i = 0; i < 1800; ++i){
-		int value = 0;
-		int key = 0;
-		bool ok = tree.find(i,value);
-	/*	if (ok == true){
-			cout << value <<" ";
+int Test1(){
+
+		
+		BPlusTree<int,int,5> tree ;
+
+		for (int i = 0; i < 180000; ++i){
+			tree.insert(i,i*10);
 		}
-*/
-		if (ok == false){
-			cout<< "#########find##### " << i+1 <<" ERROR!" << endl;
-			//return -1;
+		cout<<"insert success!\n";
+		for (int i = 0; i < 180000; ++i){
+			int value = 0;
+			int key = 0;
+			bool ok = tree.find(i,value);
+			if (ok == false){
+				cout<< "#########find##### " << i+1 <<" ERROR!" << endl;
+				return -1;
+			}
 		}
-	}
-	tree.printTree();
-	while(true){
-		int value = 0;
-		int key = 0;
-		cin >> key;
-		bool ok = tree.find(key,value);
-		if (ok){
-			cout << value << endl;
-		}else{
-			cout << "can't find value\n";
-		}
-	}
+		cout<<"find success!\n";
+
+
+		/*tree.printTree();
+		while(true){
+			int value = 0;
+			int key = 0;
+			cin >> key;
+			bool ok = tree.find(key,value);
+			if (ok){
+				cout << value << endl;
+			}else{
+				cout << "can't find value\n";
+			}
+		}*/
+
+
+}
+
+int main(int argc, char const *argv[]){
+	Test1();
 	return 0;
 }

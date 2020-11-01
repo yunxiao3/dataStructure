@@ -60,11 +60,11 @@ class BPlusTree{
 	bool remove(shared_ptr<Node> node, Key const key);
 	bool mergeChild(shared_ptr<Node>  father, int position,
 		shared_ptr<Node> leftChild, shared_ptr<Node> rightChild);
-	Key precursor(shared_ptr<Node> node);
+	Key precursor(shared_ptr<Node> node, Key key);
 	
-	Key successor(shared_ptr<Node> node);
-	bool borrowFromRight(shared_ptr<Node>  father, int position,
-		shared_ptr<Node> node, shared_ptr<Node> rightChild);
+	Key successor(shared_ptr<Node> node, Key key);
+	bool borrowFromRight(shared_ptr<Node> father, int position,shared_ptr<Node> node, shared_ptr<Node> rightChild);
+	//bool borrowFromRight(shared_ptr<Node> father, int position,shared_ptr<Node> node, shared_ptr<Node> rightChild);
 	bool borrowFromLeft(shared_ptr<Node>  father, int position,
 		shared_ptr<Node> node, shared_ptr<Node> leftChild);
 	bool borrowOrMerge(shared_ptr<Node> node,  int index);
