@@ -1,193 +1,206 @@
-#include<stdio.h>
-#include<stdlib.h>
-  
-#define MAX_LEVEL 10 //最大层数
-  
-//节点
-typedef  struct nodeStructure
-{
-    int key;
-    int value;
-    struct nodeStructure *forward[1];
-}nodeStructure;
-  
-//跳表
-typedef  struct skiplist
-{
-    int level;
-    nodeStructure *header;
-}skiplist;
-  
-//创建节点
-nodeStructure* createNode(int level,int key,int value)
-{
-    nodeStructure *ns=(nodeStructure *)malloc(sizeof(nodeStructure)+level*sizeof(nodeStructure*));  
-    ns->key=key;  
-    ns->value=value;  
-    return ns;  
-}
-  
-//初始化跳表
-skiplist* createSkiplist()
-{
-    skiplist *sl=(skiplist *)malloc(sizeof(skiplist));  
-    sl->level=0;  
-    sl->header=createNode(MAX_LEVEL-1,0,0);  
-    for(int i=0;i<MAX_LEVEL;i++)  
-    {  
-        sl->header->forward[i]=NULL;  
-    }
-    return sl;
-}
-  
-//随机产生层数
-int randomLevel()  
-{
-    int k=1;
-    while (rand()%2)  
-        k++;  
-    k=(k<MAX_LEVEL)?k:MAX_LEVEL;
-    return k;  
-}
-  
-//插入节点
-bool insert(skiplist *sl,int key,int value)
-{
-    nodeStructure *update[MAX_LEVEL];
-    nodeStructure *p, *q = NULL;
-    p=sl->header;
-    int k=sl->level;
-    //从最高层往下查找需要插入的位置
-    //填充update
-    for(int i=k-1; i >= 0; i--){
-        while((q=p->forward[i])&&(q->key<key))
-        {
-            p=q;
-        }
-        update[i]=p;
-    }
-    //不能插入相同的key
-    if(q&&q->key==key)
-    {
-        return false;
-    }
-  
-    //产生一个随机层数K
-    //新建一个待插入节点q
-    //一层一层插入
-    k=randomLevel();
-    //更新跳表的level
-    if(k>(sl->level))
-    {
-        for(int i=sl->level; i < k; i++){
-            update[i] = sl->header;
-        }
-        sl->level=k;
-    }
-  
-    q=createNode(k,key,value);
-    //逐层更新节点的指针，和普通列表插入一样
-    for(int i=0;i<k;i++)
-    {
-        q->forward[i]=update[i]->forward[i];
-        update[i]->forward[i]=q;
-    }
-    return true;
-}
-  
-//搜索指定key的value
-int search(skiplist *sl,int key)
-{
-    nodeStructure *p,*q=NULL;
-    p=sl->header;
-    //从最高层开始搜
-    int k=sl->level;
-    for(int i=k-1; i >= 0; i--){
-        while((q=p->forward[i])&&(q->key<=key))
-        {
-            if(q->key == key)
-            {
-                return q->value;
-            }
-            p=q;
-        }
-    }
-    return 0;
-}
-  
-//删除指定的key
-bool deleteSL(skiplist *sl,int key)
-{
-    nodeStructure *update[MAX_LEVEL];
-    nodeStructure *p,*q=NULL;
-    p=sl->header;
-    //从最高层开始搜
-    int k=sl->level;
-    for(int i=k-1; i >= 0; i--){
-        while((q=p->forward[i])&&(q->key<key))
-        {
-            p=q;
-        }
-        update[i]=p;
-    }
-    if(q&&q->key==key)
-    {
-        //逐层删除，和普通列表删除一样
-        for(int i=0; i<sl->level; i++){  
-            if(update[i]->forward[i]==q){  
-                update[i]->forward[i]=q->forward[i];  
-            }
-        } 
-        free(q);
-        //如果删除的是最大层的节点，那么需要重新维护跳表的
-        for(int i=sl->level - 1; i >= 0; i--){  
-            if(sl->header->forward[i]==NULL){  
-                sl->level--;  
-            }  
+#include <iostream>
+#include <vector>
+using namespace std;  
+ 
+#define MAXLEVEL 4 //最多2 power n=16个数   
+/*skip list node,they are keys and pointers*/
+classSKNode{   
+public:  
+    int key;                  
+    SKNode* forward[MAXLEVEL];  
+    SKNode(){  
+        key=0;        
+        for(int i =0;i<MAXLEVEL;i++) {             
+            forward[i]= NULL;  
+        }    
+    }   
+    SKNode& operator=(const SKNode* & node){  
+key=node->key;  
+for(inti=0;i<MAXLEVEL;i++)  
+        {  
+forward[i] = node->forward[i];  
         }  
-        return true;
-    }
-    else
-        return false;
-}
-  
-void printSL(skiplist *sl)
-{
-    //从最高层开始打印
-    nodeStructure *p,*q=NULL;
-  
-    //从最高层开始搜
-    int k=sl->level;
-    for(int i=k-1; i >= 0; i--)
-    {
-        p=sl->header;
-        while(q=p->forward[i])
-        {
-            printf("%d -> ",p->value);
-            p=q;
+return *this;  
+    }  
+};        
+//skip list, it has a header, this header have maxlevel pointers   
+classSkipList
+{   
+public:  
+SKNode *hdr;              /* list Header */    
+intlistLevel;              /* current level of list */    
+int insert(int key);   
+SKNode* search(int key);  
+intdeleteNode(int key);  
+voidprintList();  
+SkipList()
+    {  
+hdr = new SKNode;  
+listLevel = 0;  
+hdr->key = -INT_MAX;  
+SKNode* end = new SKNode;  
+SKNode* first = new SKNode;  
+first->key=-INT_MAX;  
+end->key=INT_MAX;  
+for(inti =0;i<MAXLEVEL;i++)  
+        {     
+hdr->forward[i]=first;  
+hdr->forward[i]->forward[i] = end;  
+        }  
+printList();  
+    }  
+    ~SkipList()
+    {  
+deletehdr;  
+    }  
+};   
+intgetInsertLevel()  
+{  
+intupcount = 0;  
+for(inti=0;i<MAXLEVEL;i++)  
+    {  
+intnum = rand()%10;  
+if(num<5)  
+        {  
+upcount++;  
+        }  
+    }  
+returnupcount;  
+}  
+SKNode*  SkipList::search(int key)   
+{      
+SKNode* current = new SKNode;  
+current = hdr;  
+inti = listLevel-1;  
+for(;i>=0;i--)  
+    {  
+while(current->forward[i]->key != INT_MAX && key>current->forward[i]->key)//key大于下一个数据的值。转到本层下一个元素  
+        {  
+current = current->forward[i];  
         }
-        printf("\n");
-    }
-    printf("\n");
-}
-int main()
+        //否则i--，转到下一层
+    }  
+current = current->forward[0];  
+if(current!= NULL && current->key == key)  
+    {  
+cout<<"find"<<key<<endl;  
+return current;  
+    }  
+return NULL;  
+ 
+}   
+ 
+intSkipList::insert(int key)  
+{  
+int level = getInsertLevel();  
+SKNode* node = new SKNode;  
+node->key=key;  
+ 
+SKNode *s[MAXLEVEL];  
+SKNode* current = new SKNode;  
+SKNode* last = new SKNode;  
+for(inti =0;i<MAXLEVEL;i++)  
+    {  
+s[i]=hdr->forward[i];//initiation  
+    }  
+current = last = hdr;  
+cout<<"hdr"<<hdr->key<<endl;  
+inti = listLevel-1;  
+for(;i>=0;i--)  
+    {  
+while(current->forward[i]->key != INT_MAX && key>current->forward[i]->key)//key大于下一个数据的值。转到本层下一个元素  
+        {  
+current = current->forward[i];  
+        }  
+        s[i] = current;//保存每一层位置上的最后指针的前驱  
+    }  
+last=current->forward[0];  
+if(last != NULL && last->key == key)  
+    {  
+cout<<"inset key:"<<key<<"already existed"<<endl;  
+return 0;  
+    }  
+    if(level>listLevel)//更新层数  
+    {  
+listLevel = level;  
+    }  
+ 
+for(int k = 0; k <listLevel;k++)  
+    {  
+node->forward[k]=s[k]->forward[k];  
+s[k]->forward[k]=node;     
+ 
+    }  
+if(level>listLevel)  
+    {  
+listLevel = level;  
+    }  
+return 1;  
+ 
+}  
+intSkipList::deleteNode(int key)
 {
-    skiplist *sl=createSkiplist();
-    for(int i=1;i<=5;i++)
+SKNode *s[MAXLEVEL];
+SKNode* current = new SKNode;
+SKNode* last = new SKNode;
+for(inti =0;i<MAXLEVEL;i++)
+ {
+s[i]=hdr->forward[i];//initiation
+ }
+current = last = hdr;
+for(inti = listLevel-1;i>=0;i--)
+ {
+while(current->forward[i]->key != INT_MAX && key>current->forward[i]->key)//key大于下一个数据的值。转到本层下一个元素
+  {
+current = current->forward[i];
+  }
+  s[i] = current;//保存每一层位置上的最后指针的前驱
+ }
+last=current->forward[0];
+if(last->key != key)
+ {
+cout<<"delete key:"<<key<<"does not existed"<<endl;
+ 
+return 0;
+ }
+for(inti = 0; i<listLevel;i++)
+ {
+s[i]->forward[i]=s[i]->forward[i]->forward[i];
+ }
+return 1;
+}
+voidSkipList::printList()
+{
+    SKNode* current = hdr;
+    for(inti = listLevel -1;i>=0;i--)
     {
-        insert(sl,i,i*2);
-        printSL(sl);
-
+        current = hdr->forward[i];
+        cout<<"level "<<i<<"................................"<<endl;
+        while(current->forward[i] != NULL)//key大于下一个数据的值。转到本层下一个元素
+        {
+            cout<<" "<<current->key;
+            current = current->forward[i];
+        }
+        cout<<" "<<current->key<<endl; 
     }
-    printSL(sl);
-    //搜索
-    int i=search(sl,4);
-    printf("i=%d\n",i);
-    //删除
-    bool b=deleteSL(sl,4);
-    if(b)
-        printf("删除成功\n");
-    printSL(sl);
+}   
+ 
+int main() 
+{ 
+    SkipListsk;
+    constint n = 7;
+    intnum[n]={30,15,45,37,11,53,17};
+    cout<<"test insert............."<<endl;
+    for(inti = 0;i<n;i++)
+    {
+        sk.insert(num[i]);
+    }
+    sk.printList();
+    cout<<"test search............"<<endl;
+    sk.search(17);
+    cout<<"test delete................."<<endl;
+    sk.deleteNode(30);
+    sk.printList();
     system("pause");
     return 0;
-}
+}  
